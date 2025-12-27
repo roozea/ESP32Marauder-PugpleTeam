@@ -35,6 +35,7 @@ extern "C" {
   //ESP32 Sour Apple by RapierXbox
   //Exploit by ECTO-1A
   NimBLEAdvertising *pAdvertising;
+  NimBLEServer *pServer = NULL;
 
   //// https://github.com/Spooks4576
   NimBLEAdvertisementData WiFiScan::GetUniversalAdvertisementData(EBLEPayloadType Type) {
@@ -2333,12 +2334,14 @@ bool WiFiScan::shutdownBLE() {
       pBLEScan->clearResults();
 
       #ifndef HAS_DUAL_BAND
-        NimBLEDevice::deinit();
+        delay(50);
+        NimBLEDevice::deinit(true);
+        pServer = NULL;
       #endif
 
       this->_analyzer_value = 0;
       this->bt_frames = 0;
-    
+
       this->ble_initialized = false;
     }
     else {
@@ -4316,13 +4319,9 @@ void WiFiScan::RunPwnScan(uint8_t scan_mode, uint16_t color)
 
 void WiFiScan::executeSourApple() {
   #ifdef HAS_BT
-    NimBLEDevice::init("");
-    NimBLEServer *pServer = NimBLEDevice::createServer();
-
-    pAdvertising = pServer->getAdvertising();
-
+    // Usar instancias BLE ya inicializadas en RunSourApple()
+    // NO hacer init/createServer aquí
     delay(40);
-    //NimBLEAdvertisementData advertisementData = getOAdvertisementData();
     NimBLEAdvertisementData advertisementData = this->GetUniversalAdvertisementData(Apple);
     pAdvertising->setAdvertisementData(advertisementData);
     pAdvertising->start();
@@ -4387,25 +4386,15 @@ void WiFiScan::executeSwiftpairSpam(EBLEPayloadType type) {
   #ifdef HAS_BT
     uint8_t macAddr[6];
     generateRandomMac(macAddr);
-
-    //esp_base_mac_addr_set(macAddr);
-
     this->setBaseMacAddress(macAddr);
 
-    NimBLEDevice::init("");
-
-    NimBLEServer *pServer = NimBLEDevice::createServer();
-
-    pAdvertising = pServer->getAdvertising();
-
-    //NimBLEAdvertisementData advertisementData = getSwiftAdvertisementData();
+    // Usar instancias BLE ya inicializadas en RunSwiftpairSpam()
+    // NO hacer init/createServer/deinit aquí
     NimBLEAdvertisementData advertisementData = this->GetUniversalAdvertisementData(type);
     pAdvertising->setAdvertisementData(advertisementData);
     pAdvertising->start();
     delay(10);
     pAdvertising->stop();
-
-    NimBLEDevice::deinit();
   #endif
 }
 
@@ -4879,10 +4868,14 @@ void WiFiScan::RunProbeScan(uint8_t scan_mode, uint16_t color)
 
 void WiFiScan::RunSourApple(uint8_t scan_mode, uint16_t color) {
   #ifdef HAS_BT
-    /*NimBLEDevice::init("");
-    NimBLEServer *pServer = NimBLEDevice::createServer();
-
-    pAdvertising = pServer->getAdvertising();*/
+    // INIT ÚNICO: Inicializar BLE solo una vez
+    if (!NimBLEDevice::getInitialized()) {
+      Serial.println("BLE Spam: Initializing BLE once...");
+      NimBLEDevice::init("");
+      pServer = NimBLEDevice::createServer();
+      pAdvertising = pServer->getAdvertising();
+    }
+    this->ble_initialized = true;
 
     #ifdef HAS_SCREEN
       display_obj.TOP_FIXED_AREA_2 = 48;
@@ -4917,6 +4910,15 @@ void WiFiScan::RunSourApple(uint8_t scan_mode, uint16_t color) {
 
 void WiFiScan::RunSwiftpairSpam(uint8_t scan_mode, uint16_t color) {
   #ifdef HAS_BT
+    // INIT ÚNICO: Inicializar BLE solo una vez
+    if (!NimBLEDevice::getInitialized()) {
+      Serial.println("BLE Spam: Initializing BLE once...");
+      NimBLEDevice::init("");
+      pServer = NimBLEDevice::createServer();
+      pAdvertising = pServer->getAdvertising();
+    }
+    this->ble_initialized = true;
+
     #ifdef HAS_SCREEN
       display_obj.TOP_FIXED_AREA_2 = 48;
       display_obj.tteBar = true;

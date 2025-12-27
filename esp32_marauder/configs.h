@@ -128,7 +128,7 @@
     #define HAS_MINI_KB
     #define HAS_BT
     #define HAS_BUTTONS
-    #define HAS_NEOPIXEL_LED
+    //#define HAS_NEOPIXEL_LED  // DESHABILITADO: Conflicto con GPS_TX en GPIO 4
     //#define HAS_PWR_MGMT
     #define HAS_SCREEN
     #define HAS_MINI_SCREEN
@@ -145,7 +145,7 @@
     #define HAS_BT
     #define HAS_BT_REMOTE
     #define HAS_BUTTONS
-    #define HAS_NEOPIXEL_LED
+    //#define HAS_NEOPIXEL_LED  // DESHABILITADO: Conflicto con GPS_TX en GPIO 4
     //#define HAS_PWR_MGMT
     #define HAS_SCREEN
     #define HAS_FULL_SCREEN
@@ -162,7 +162,7 @@
     #define HAS_BT
     #define HAS_BT_REMOTE
     #define HAS_BUTTONS
-    #define HAS_NEOPIXEL_LED
+    //#define HAS_NEOPIXEL_LED  // DESHABILITADO: Conflicto con GPS_TX en GPIO 4
     //#define HAS_PWR_MGMT
     #define HAS_SCREEN
     #define HAS_FULL_SCREEN
@@ -179,7 +179,7 @@
     //#define HAS_BT
     #define HAS_MINI_KB
     #define HAS_BUTTONS
-    #define HAS_NEOPIXEL_LED
+    //#define HAS_NEOPIXEL_LED  // DESHABILITADO: Conflicto con GPS_TX en GPIO 4
     //#define HAS_PWR_MGMT
     #define HAS_SCREEN
     #define HAS_MINI_SCREEN
@@ -195,7 +195,7 @@
     #define HAS_BATTERY
     #define HAS_BT
     //#define HAS_BUTTONS
-    #define HAS_NEOPIXEL_LED
+    //#define HAS_NEOPIXEL_LED  // DESHABILITADO: Conflicto con GPS_TX en GPIO 4
     //#define HAS_PWR_MGMT
     #define HAS_SCREEN
     #define HAS_FULL_SCREEN
@@ -212,7 +212,7 @@
     #define HAS_BT
     #define HAS_BT_REMOTE
     #define HAS_BUTTONS
-    #define HAS_NEOPIXEL_LED
+    //#define HAS_NEOPIXEL_LED  // DESHABILITADO: Conflicto con GPS_TX en GPIO 4
     //#define HAS_PWR_MGMT
     #define HAS_SCREEN
     #define HAS_FULL_SCREEN
@@ -307,7 +307,7 @@
     #define HAS_BATTERY
     #define HAS_BT
     //#define HAS_BUTTONS
-    #define HAS_NEOPIXEL_LED
+    //#define HAS_NEOPIXEL_LED  // DESHABILITADO: Conflicto con GPS_TX en GPIO 4
     //#define HAS_PWR_MGMT
     #define HAS_SCREEN
     #define HAS_FULL_SCREEN
@@ -381,7 +381,7 @@
     //#define HAS_BATTERY
     #define HAS_BT
     //#define HAS_BUTTONS
-    #define HAS_NEOPIXEL_LED
+    //#define HAS_NEOPIXEL_LED  // DESHABILITADO: Conflicto con GPS_TX en GPIO 4
     //#define HAS_PWR_MGMT
     //#define HAS_SCREEN
     #define HAS_SD
@@ -409,7 +409,7 @@
     //#define HAS_BATTERY
     #define HAS_BT
     //#define HAS_BUTTONS
-    #define HAS_NEOPIXEL_LED
+    //#define HAS_NEOPIXEL_LED  // DESHABILITADO: Conflicto con GPS_TX en GPIO 4
     //#define HAS_PWR_MGMT
     //#define HAS_SCREEN
     #define HAS_GPS

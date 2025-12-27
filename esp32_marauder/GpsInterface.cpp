@@ -11,45 +11,44 @@ MicroNMEA nmea(nmeaBuffer, sizeof(nmeaBuffer));
 HardwareSerial Serial2(GPS_SERIAL_INDEX);
 
 void GpsInterface::begin() {
+  Serial.println("=== GPS Initialization START ===");
+  Serial.printf("GPS_TX pin: %d\n", GPS_TX);
+  Serial.printf("GPS_RX pin: %d\n", GPS_RX);
 
-  /*#ifdef MARAUDER_MINI
-    pinMode(26, OUTPUT);
+  // Test pin state BEFORE init
+  pinMode(GPS_TX, INPUT);
+  Serial.printf("Pin %d state before Serial2: %d\n", GPS_TX, digitalRead(GPS_TX));
 
-    delay(1);
-
-    analogWrite(26, 243);
-    delay(1);
-
-    Serial.println("Activated GPS");
-    delay(100);
-  #endif*/
-
-  
+  Serial.println("Starting Serial2 at 9600 baud...");
   Serial2.begin(9600, SERIAL_8N1, GPS_TX, GPS_RX);
+  delay(500);
 
-  MicroNMEA::sendSentence(Serial2, "$PSTMSETPAR,1201,0x00000042");
-  MicroNMEA::sendSentence(Serial2, "$PSTMSAVEPAR");
+  Serial.printf("Serial2.available() after init: %d\n", Serial2.available());
 
-  MicroNMEA::sendSentence(Serial2, "$PSTMSRR");
+  // Try reading raw data without config commands first
+  if (Serial2.available() == 0) {
+    Serial.println("No data yet, waiting 2 seconds...");
+    delay(2000);
+    Serial.printf("Serial2.available() after wait: %d\n", Serial2.available());
+  }
 
-  delay(1000);
-
-  if (Serial2.available()) {
-    Serial.println("GPS Attached Successfully");
-    this->gps_enabled = true;
-    while (Serial2.available()) {
-      //Fetch the character one by one
-      char c = Serial2.read();
-      //Serial.print(c);
-      //Pass the character to the library
-      nmea.process(c);
+  if (Serial2.available() > 0) {
+    Serial.println("GPS Attached Successfully!");
+    Serial.print("Raw GPS data: ");
+    int count = 0;
+    while (Serial2.available() && count < 200) {
+      Serial.write(Serial2.read());
+      count++;
     }
-  }
-  else {
+    Serial.println();
+    this->gps_enabled = true;
+  } else {
+    Serial.println("GPS Not Found - No data received");
+    Serial.println("Possible hardware issue or wrong pins");
     this->gps_enabled = false;
-    Serial.println("GPS Not Found");
   }
-  
+
+  Serial.println("=== GPS Initialization END ===");
 
   this->type_flag=GPSTYPE_NATIVE; //enforce default
   this->disable_queue(); //init the queue, disabled, kill NULLs
