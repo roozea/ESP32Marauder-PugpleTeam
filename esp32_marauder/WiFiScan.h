@@ -111,6 +111,7 @@
 #define WIFI_SCAN_GPS_NMEA 40
 #define BT_ATTACK_GOOGLE_SPAM 41
 #define BT_ATTACK_FLIPPER_SPAM 42
+#define BT_ATTACK_FAST_PAIR_SPAM 76
 #define BT_SCAN_AIRTAG 43
 #define BT_SPOOF_AIRTAG 44
 #define BT_SCAN_FLIPPER 45
@@ -502,7 +503,8 @@ class WiFiScan
       Samsung,
       Google,
       FlipperZero,
-      Airtag
+      Airtag,
+      FastPair
     };
 
       #ifdef HAS_BT
@@ -520,6 +522,10 @@ class WiFiScan
       };
 
       WatchModel* watch_models = nullptr;
+
+      // Google Fast Pair Model IDs (genera popups en Android 6.0+)
+      static const uint32_t fastPairModels[];
+      static const int fastPairModelsCount;
 
       static void scanCompleteCB(BLEScanResults scanResults);
       NimBLEAdvertisementData GetUniversalAdvertisementData(EBLEPayloadType type);
@@ -545,6 +551,7 @@ class WiFiScan
     void executeSourApple();
     void executeSpoofAirtag();
     void executeSwiftpairSpam(EBLEPayloadType type);
+    void executeFastPairSpam();
     void startWardriverWiFi();
     //void generateRandomMac(uint8_t* mac);
     //void generateRandomName(char *name, size_t length);
@@ -594,6 +601,7 @@ class WiFiScan
     void RunBluetoothScan(uint8_t scan_mode, uint16_t color);
     void RunSourApple(uint8_t scan_mode, uint16_t color);
     void RunSwiftpairSpam(uint8_t scan_mode, uint16_t color);
+    void RunFastPairSpam(uint8_t scan_mode, uint16_t color);
     void RunEvilPortal(uint8_t scan_mode, uint16_t color);
     void RunPingScan(uint8_t scan_mode, uint16_t color);
     void RunPortScanAll(uint8_t scan_mode, uint16_t color);

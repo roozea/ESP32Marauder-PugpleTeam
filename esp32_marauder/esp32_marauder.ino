@@ -149,6 +149,45 @@ void backlightOff() {
   #endif
 }
 
+// === AUTO-SLEEP VARIABLES (60s timeout) ===
+#ifdef HAS_SCREEN
+  unsigned long lastActivityTime = 0;
+  const unsigned long SCREEN_TIMEOUT = 60000; // 60 segundos en milisegundos
+  bool screenOn = true;
+#endif
+
+// === AUTO-SLEEP FUNCTIONS ===
+#ifdef HAS_SCREEN
+void screenSleep() {
+  if (screenOn) {
+    #ifdef MARAUDER_MINI
+      digitalWrite(TFT_BL, HIGH); // MINI: HIGH = off
+    #else
+      digitalWrite(TFT_BL, LOW);  // V6_1 y otros: LOW = off
+    #endif
+    screenOn = false;
+    Serial.println("Screen: Auto-sleep (60s timeout)");
+  }
+}
+
+void screenWake() {
+  if (!screenOn) {
+    #ifdef MARAUDER_MINI
+      digitalWrite(TFT_BL, LOW);  // MINI: LOW = on
+    #else
+      digitalWrite(TFT_BL, HIGH); // V6_1 y otros: HIGH = on
+    #endif
+    screenOn = true;
+    Serial.println("Screen: Wake up");
+  }
+  lastActivityTime = millis(); // Reset timer
+}
+
+void resetActivityTimer() {
+  lastActivityTime = millis();
+}
+#endif
+
 // CPU frequency management for battery optimization
 void setCpuFrequencyLow() {
   // 80MHz for menu navigation - saves ~40% battery
@@ -362,6 +401,13 @@ void setup()
   // Start in low power mode (80MHz) for menu navigation
   setCpuFrequencyLow();
 
+  // Initialize auto-sleep timer
+  #ifdef HAS_SCREEN
+    lastActivityTime = millis();
+    screenOn = true;
+    Serial.println("Auto-sleep: Initialized (60s timeout)");
+  #endif
+
   Serial.println(F("CLI Ready"));
   cli_obj.RunSetup();
 }
@@ -381,6 +427,8 @@ void loop()
   #if (defined(HAS_ILI9341) && !defined(MARAUDER_CYD_2USB))
     #ifdef HAS_BUTTONS
       if (c_btn.isHeld()) {
+        screenWake(); // Auto-sleep: wake on button press
+
         if (menu_function_obj.disable_touch)
           menu_function_obj.disable_touch = false;
         else
@@ -392,6 +440,13 @@ void loop()
           delay(1);
       }
     #endif
+  #endif
+
+  // === AUTO-SLEEP: Check timeout ===
+  #ifdef HAS_SCREEN
+    if (screenOn && (millis() - lastActivityTime > SCREEN_TIMEOUT)) {
+      screenSleep();
+    }
   #endif
 
   // Update all of our objects

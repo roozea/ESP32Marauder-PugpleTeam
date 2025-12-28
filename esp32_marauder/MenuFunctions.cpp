@@ -255,6 +255,7 @@ void MenuFunctions::main(uint32_t currentTime)
           (wifi_scan_obj.currentScanMode == BT_ATTACK_SAMSUNG_SPAM) ||
           (wifi_scan_obj.currentScanMode == BT_ATTACK_GOOGLE_SPAM) ||
           (wifi_scan_obj.currentScanMode == BT_ATTACK_FLIPPER_SPAM) ||
+          (wifi_scan_obj.currentScanMode == BT_ATTACK_FAST_PAIR_SPAM) ||
           (wifi_scan_obj.currentScanMode == BT_SPOOF_AIRTAG) ||
           (wifi_scan_obj.currentScanMode == BT_SCAN_WAR_DRIVE) ||
           (wifi_scan_obj.currentScanMode == BT_SCAN_WAR_DRIVE_CONT) ||
@@ -354,6 +355,7 @@ void MenuFunctions::main(uint32_t currentTime)
             (wifi_scan_obj.currentScanMode == BT_ATTACK_SAMSUNG_SPAM) ||
             (wifi_scan_obj.currentScanMode == BT_ATTACK_GOOGLE_SPAM) ||
             (wifi_scan_obj.currentScanMode == BT_ATTACK_FLIPPER_SPAM) ||
+            (wifi_scan_obj.currentScanMode == BT_ATTACK_FAST_PAIR_SPAM) ||
             (wifi_scan_obj.currentScanMode == BT_SPOOF_AIRTAG) ||
             (wifi_scan_obj.currentScanMode == BT_SCAN_WAR_DRIVE) ||
             (wifi_scan_obj.currentScanMode == BT_SCAN_WAR_DRIVE_CONT) ||
@@ -2471,6 +2473,11 @@ void MenuFunctions::RunSetup()
     display_obj.clearScreen();
     this->drawStatusBar();
     wifi_scan_obj.StartScan(BT_ATTACK_GOOGLE_SPAM, TFT_PURPLE);
+  });
+  this->addNodes(&bluetoothAttackMenu, "Fast Pair Spam", TFTCYAN, NULL, KEYBOARD_ICO, [this]() {
+    display_obj.clearScreen();
+    this->drawStatusBar();
+    wifi_scan_obj.StartScan(BT_ATTACK_FAST_PAIR_SPAM, TFT_CYAN);
   });
   this->addNodes(&bluetoothAttackMenu, "Flipper BLE Spam", TFTORANGE, NULL, FLIPPER, [this]() {
     display_obj.clearScreen();
