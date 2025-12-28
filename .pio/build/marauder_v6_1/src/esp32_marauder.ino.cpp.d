@@ -331,12 +331,22 @@
  /Users/roozea/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_wifi/include/esp_wifi_crypto_types.h \
  /Users/roozea/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_wifi/include/esp_private/wifi_os_adapter.h \
  /Users/roozea/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_wifi/include/esp_wifi_default.h \
+ /Users/roozea/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_pm/include/esp_pm.h \
+ /Users/roozea/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_pm/include/esp32/pm.h \
+ /Users/roozea/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/soc/esp32/include/soc/rtc.h \
+ /Users/roozea/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/soc/include/soc/rtc_periph.h \
+ /Users/roozea/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/soc/include/soc/rtc_io_periph.h \
+ /Users/roozea/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/soc/esp32/include/soc/rtc_io_channel.h \
+ /Users/roozea/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/soc/esp32/include/soc/rtc_io_struct.h \
+ /Users/roozea/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/soc/esp32/include/soc/rtc_cntl_struct.h \
+ /Users/roozea/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/soc/esp32/include/soc/sens_struct.h \
  esp32_marauder/GpsInterface.h \
  .pio/libdeps/marauder_v6_1/MicroNMEA/src/MicroNMEA.h \
  .pio/libdeps/marauder_v6_1/EspSoftwareSerial/src/SoftwareSerial.h \
  .pio/libdeps/marauder_v6_1/ghostl/src/circular_queue.h \
  .pio/libdeps/marauder_v6_1/ghostl/src/Delegate.h \
- esp32_marauder/WiFiScan.h esp32_marauder/utils.h \
+ esp32_marauder/pug_hacker.h esp32_marauder/WiFiScan.h \
+ esp32_marauder/utils.h \
  .pio/libdeps/marauder_v6_1/NimBLE-Arduino/src/NimBLEDevice.h \
  .pio/libdeps/marauder_v6_1/NimBLE-Arduino/src/nimconfig.h \
  .pio/libdeps/marauder_v6_1/NimBLE-Arduino/src/nimconfig_rename.h \

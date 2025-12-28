@@ -17,6 +17,7 @@ https://www.online-utility.org/image/convert/to/XBM
 #include <Wire.h>
 #include "esp_wifi.h"
 #include "esp_wifi_types.h"
+#include "esp_pm.h"
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -28,6 +29,7 @@ https://www.online-utility.org/image/convert/to/XBM
 #endif
 
 #include "Assets.h"
+#include "pug_hacker.h"
 #include "WiFiScan.h"
 #ifdef HAS_SD
   #include "SDInterface.h"
@@ -140,11 +142,24 @@ void backlightOff() {
     #ifdef MARAUDER_MINI
       digitalWrite(TFT_BL, HIGH);
     #endif
-  
+
     #ifndef MARAUDER_MINI
       digitalWrite(TFT_BL, LOW);
     #endif
   #endif
+}
+
+// CPU frequency management for battery optimization
+void setCpuFrequencyLow() {
+  // 80MHz for menu navigation - saves ~40% battery
+  setCpuFrequencyMhz(80);
+  Serial.println("CPU: 80MHz (low power mode)");
+}
+
+void setCpuFrequencyHigh() {
+  // 240MHz for scanning/attacks - maximum performance
+  setCpuFrequencyMhz(240);
+  Serial.println("CPU: 240MHz (high performance mode)");
 }
 
 #ifdef HAS_C5_SD
@@ -222,37 +237,47 @@ void setup()
 
   #ifdef HAS_SCREEN
     #ifndef MARAUDER_CARDPUTER
-      // Título principal - Pugple Team en cyan
-      display_obj.tft.setTextColor(TFT_CYAN, TFT_BLACK);
-      display_obj.tft.drawCentreString("Pugple Team", TFT_WIDTH/2, TFT_HEIGHT * 0.25, 1);
+      // Dibujar pug hacker 64x64 centrado arriba (solo líneas, fondo transparente)
+      int pug_x = (TFT_WIDTH - PUG_HACKER_WIDTH) / 2;
+      int pug_y = 5;
+      display_obj.tft.drawXBitmap(pug_x, pug_y, pug_hacker_bits,
+                                  PUG_HACKER_WIDTH, PUG_HACKER_HEIGHT,
+                                  TFT_MAGENTA);
 
-      // Subtítulo - ESP32 Marauder en blanco
+      // Texto debajo del pug (ajustado para logo 64x64)
+      display_obj.tft.setTextColor(TFT_MAGENTA, TFT_BLACK);
+      display_obj.tft.drawCentreString("Pugple Team", TFT_WIDTH/2, 75, 1);
+
       display_obj.tft.setTextColor(TFT_WHITE, TFT_BLACK);
-      display_obj.tft.drawCentreString("ESP32 Marauder", TFT_WIDTH/2, TFT_HEIGHT * 0.40, 1);
+      display_obj.tft.drawCentreString("ESP32 Marauder", TFT_WIDTH/2, 95, 1);
 
-      // Créditos - gris oscuro
       display_obj.tft.setTextColor(TFT_DARKGREY, TFT_BLACK);
-      display_obj.tft.drawCentreString("inspired by JustCallMeKoko", TFT_WIDTH/2, TFT_HEIGHT * 0.55, 1);
+      display_obj.tft.drawCentreString("inspired by", TFT_WIDTH/2, 115, 1);
+      display_obj.tft.drawCentreString("JustCallMeKoko", TFT_WIDTH/2, 130, 1);
 
-      // Versión - verde
       display_obj.tft.setTextColor(TFT_GREEN, TFT_BLACK);
-      display_obj.tft.drawCentreString(display_obj.version_number, TFT_WIDTH/2, TFT_HEIGHT * 0.70, 1);
+      display_obj.tft.drawCentreString(display_obj.version_number, TFT_WIDTH/2, 150, 1);
     #else
-      // Título principal - Pugple Team en cyan (Cardputer rotado)
-      display_obj.tft.setTextColor(TFT_CYAN, TFT_BLACK);
-      display_obj.tft.drawCentreString("Pugple Team", TFT_HEIGHT/2, TFT_WIDTH * 0.25, 1);
+      // Cardputer version (rotado) - logo 64x64 (solo líneas, fondo transparente)
+      int pug_x = (TFT_HEIGHT - PUG_HACKER_WIDTH) / 2;
+      int pug_y = 5;
+      display_obj.tft.drawXBitmap(pug_x, pug_y, pug_hacker_bits,
+                                  PUG_HACKER_WIDTH, PUG_HACKER_HEIGHT,
+                                  TFT_MAGENTA);
 
-      // Subtítulo - ESP32 Marauder en blanco
+      // Texto debajo del pug (coordenadas rotadas, ajustado para logo 64x64)
+      display_obj.tft.setTextColor(TFT_MAGENTA, TFT_BLACK);
+      display_obj.tft.drawCentreString("Pugple Team", TFT_HEIGHT/2, 75, 1);
+
       display_obj.tft.setTextColor(TFT_WHITE, TFT_BLACK);
-      display_obj.tft.drawCentreString("ESP32 Marauder", TFT_HEIGHT/2, TFT_WIDTH * 0.40, 1);
+      display_obj.tft.drawCentreString("ESP32 Marauder", TFT_HEIGHT/2, 95, 1);
 
-      // Créditos - gris oscuro
       display_obj.tft.setTextColor(TFT_DARKGREY, TFT_BLACK);
-      display_obj.tft.drawCentreString("inspired by JustCallMeKoko", TFT_HEIGHT/2, TFT_WIDTH * 0.55, 1);
+      display_obj.tft.drawCentreString("inspired by", TFT_HEIGHT/2, 115, 1);
+      display_obj.tft.drawCentreString("JustCallMeKoko", TFT_HEIGHT/2, 130, 1);
 
-      // Versión - verde
       display_obj.tft.setTextColor(TFT_GREEN, TFT_BLACK);
-      display_obj.tft.drawCentreString(display_obj.version_number, TFT_HEIGHT/2, TFT_WIDTH * 0.70, 1);
+      display_obj.tft.drawCentreString(display_obj.version_number, TFT_HEIGHT/2, 150, 1);
     #endif
   #endif
 
@@ -333,7 +358,10 @@ void setup()
   menu_function_obj.changeMenu(menu_function_obj.current_menu);*/
 
   wifi_scan_obj.StartScan(WIFI_SCAN_OFF);
-  
+
+  // Start in low power mode (80MHz) for menu navigation
+  setCpuFrequencyLow();
+
   Serial.println(F("CLI Ready"));
   cli_obj.RunSetup();
 }

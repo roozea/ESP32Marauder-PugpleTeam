@@ -49,12 +49,12 @@ bool SDInterface::initSD() {
       #endif
       Serial.println("Using external SPI configuration...");
       this->spiExt->begin(SPI_SCK, SPI_MISO, SPI_MOSI, SD_CS);
-      if (!SD.begin(SD_CS, *(this->spiExt))) {
+      if (!SD.begin(SD_CS, *(this->spiExt), 40000000)) {  // 40MHz = 10x faster
     #elif defined(HAS_C5_SD)
       Serial.println("Using C5 SD configuration...");
-      if (!SD.begin(SD_CS, *_spi)) {
+      if (!SD.begin(SD_CS, *_spi, 40000000)) {  // 40MHz = 10x faster
     #else
-      if (!SD.begin(SD_CS)) {
+      if (!SD.begin(SD_CS, SPI, 40000000)) {  // 40MHz = 10x faster
     #endif
       Serial.println(F("Failed to mount SD Card"));
       this->supported = false;
