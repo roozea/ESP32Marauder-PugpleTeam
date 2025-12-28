@@ -2327,22 +2327,34 @@ bool WiFiScan::shutdownWiFi() {
 bool WiFiScan::shutdownBLE() {
   #ifdef HAS_BT
     if (this->ble_initialized) {
-      Serial.println(F("Shutting down BLE"));
-      pAdvertising->stop();
-      pBLEScan->stop();
-      
-      pBLEScan->clearResults();
+      Serial.println("Stopping BLE safely (no deinit)...");
 
-      #ifndef HAS_DUAL_BAND
-        delay(50);
-        NimBLEDevice::deinit(true);
-        pServer = NULL;
-      #endif
+      // Detener advertising de forma segura
+      if (pAdvertising != NULL) {
+        if (pAdvertising->isAdvertising()) {
+          pAdvertising->stop();
+          delay(100);  // Esperar a que el evento ADV_COMPLETE se procese
+        }
+      }
+
+      // Detener scan si está activo
+      if (pBLEScan != NULL) {
+        if (pBLEScan->isScanning()) {
+          pBLEScan->stop();
+          delay(50);
+        }
+        pBLEScan->clearResults();
+      }
+
+      // NO hacer NimBLEDevice::deinit() - causa crash por callbacks pendientes
+      // Bug conocido de NimBLE: deinit() crashea cuando hay callbacks GAP pendientes
+      // El stack BLE permanece en memoria pero inactivo (~30KB RAM)
 
       this->_analyzer_value = 0;
       this->bt_frames = 0;
-
       this->ble_initialized = false;
+
+      Serial.println("BLE stopped successfully");
     }
     else {
       return false;
@@ -4358,23 +4370,16 @@ void WiFiScan::executeSpoofAirtag() {
         macAddr[5] -= 2;
 
         // Do this because ESP32 BT addr is Base MAC + 2
-        
+
         this->setBaseMacAddress(macAddr);
 
-        NimBLEDevice::init("");
-
-        NimBLEServer *pServer = NimBLEDevice::createServer();
-
-        pAdvertising = pServer->getAdvertising();
-
-        //NimBLEAdvertisementData advertisementData = getSwiftAdvertisementData();
+        // Usar instancias BLE ya inicializadas en RunSwiftpairSpam()
+        // NO hacer init/createServer/deinit aquí
         NimBLEAdvertisementData advertisementData = this->GetUniversalAdvertisementData(Airtag);
         pAdvertising->setAdvertisementData(advertisementData);
         pAdvertising->start();
         delay(10);
         pAdvertising->stop();
-
-        NimBLEDevice::deinit();
 
         break;
       }

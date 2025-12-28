@@ -222,13 +222,37 @@ void setup()
 
   #ifdef HAS_SCREEN
     #ifndef MARAUDER_CARDPUTER
-      display_obj.tft.drawCentreString("ESP32 Marauder", TFT_WIDTH/2, TFT_HEIGHT * 0.33, 1);
-      display_obj.tft.drawCentreString("JustCallMeKoko", TFT_WIDTH/2, TFT_HEIGHT * 0.5, 1);
-      display_obj.tft.drawCentreString(display_obj.version_number, TFT_WIDTH/2, TFT_HEIGHT * 0.66, 1);
+      // Título principal - Pugple Team en cyan
+      display_obj.tft.setTextColor(TFT_CYAN, TFT_BLACK);
+      display_obj.tft.drawCentreString("Pugple Team", TFT_WIDTH/2, TFT_HEIGHT * 0.25, 1);
+
+      // Subtítulo - ESP32 Marauder en blanco
+      display_obj.tft.setTextColor(TFT_WHITE, TFT_BLACK);
+      display_obj.tft.drawCentreString("ESP32 Marauder", TFT_WIDTH/2, TFT_HEIGHT * 0.40, 1);
+
+      // Créditos - gris oscuro
+      display_obj.tft.setTextColor(TFT_DARKGREY, TFT_BLACK);
+      display_obj.tft.drawCentreString("inspired by JustCallMeKoko", TFT_WIDTH/2, TFT_HEIGHT * 0.55, 1);
+
+      // Versión - verde
+      display_obj.tft.setTextColor(TFT_GREEN, TFT_BLACK);
+      display_obj.tft.drawCentreString(display_obj.version_number, TFT_WIDTH/2, TFT_HEIGHT * 0.70, 1);
     #else
-      display_obj.tft.drawCentreString("ESP32 Marauder", TFT_HEIGHT/2, TFT_WIDTH * 0.33, 1);
-      display_obj.tft.drawCentreString("JustCallMeKoko", TFT_HEIGHT/2, TFT_WIDTH * 0.5, 1);
-      display_obj.tft.drawCentreString(display_obj.version_number, TFT_HEIGHT/2, TFT_WIDTH * 0.66, 1);
+      // Título principal - Pugple Team en cyan (Cardputer rotado)
+      display_obj.tft.setTextColor(TFT_CYAN, TFT_BLACK);
+      display_obj.tft.drawCentreString("Pugple Team", TFT_HEIGHT/2, TFT_WIDTH * 0.25, 1);
+
+      // Subtítulo - ESP32 Marauder en blanco
+      display_obj.tft.setTextColor(TFT_WHITE, TFT_BLACK);
+      display_obj.tft.drawCentreString("ESP32 Marauder", TFT_HEIGHT/2, TFT_WIDTH * 0.40, 1);
+
+      // Créditos - gris oscuro
+      display_obj.tft.setTextColor(TFT_DARKGREY, TFT_BLACK);
+      display_obj.tft.drawCentreString("inspired by JustCallMeKoko", TFT_HEIGHT/2, TFT_WIDTH * 0.55, 1);
+
+      // Versión - verde
+      display_obj.tft.setTextColor(TFT_GREEN, TFT_BLACK);
+      display_obj.tft.drawCentreString(display_obj.version_number, TFT_HEIGHT/2, TFT_WIDTH * 0.70, 1);
     #endif
   #endif
 
