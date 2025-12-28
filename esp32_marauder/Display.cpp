@@ -1,7 +1,7 @@
 #include "Display.h"
 #include "lang_var.h"
 
-// Extern declarations for auto-sleep functions
+// Auto-sleep extern functions
 extern void screenWake();
 extern void resetActivityTimer();
 
@@ -49,7 +49,7 @@ uint8_t Display::updateTouch(uint16_t *x, uint16_t *y, uint16_t threshold) {
       #ifndef HAS_CYD_TOUCH
         uint8_t touched = this->tft.getTouch(x, y, threshold);
         if (touched) {
-          screenWake(); // Auto-sleep: wake screen on touch
+          resetActivityTimer(); // Solo despertar si realmente hubo toque
         }
         return touched;
       #else
@@ -83,17 +83,15 @@ uint8_t Display::updateTouch(uint16_t *x, uint16_t *y, uint16_t threshold) {
               *y = map(p.x, 200, 3700, 1, TFT_HEIGHT);
               break;
           }
-          // Auto-sleep: wake screen on touch
-          screenWake();
+          resetActivityTimer(); // Despertar pantalla al tocar CYD
           return 1;
         }
         else
           return 0;
       #endif
     }
-    else {
+    else
       return !this->headless_mode;
-    }
   #endif
 
   return 0;
@@ -487,33 +485,37 @@ void Display::processAndPrintString(TFT_eSPI& tft, const String& originalString)
   String new_string = originalString;
 
   // Check for color macros at the start of the string
-  if (new_string.startsWith(RED_KEY)) {
-    text_color = TFT_RED;
-    new_string.remove(0, strlen(RED_KEY)); // Remove the macro
-  } else if (new_string.startsWith(GREEN_KEY)) {
-    text_color = TFT_GREEN;
-    new_string.remove(0, strlen(GREEN_KEY)); // Remove the macro
-  } else if (new_string.startsWith(CYAN_KEY)) {
-    text_color = TFT_CYAN;
-    new_string.remove(0, strlen(CYAN_KEY)); // Remove the macro
-  } else if (new_string.startsWith(WHITE_KEY)) {
-    text_color = TFT_WHITE;
-    new_string.remove(0, strlen(WHITE_KEY)); // Remove the macro
-  } else if (new_string.startsWith(MAGENTA_KEY)) {
-    text_color = TFT_MAGENTA;
-    new_string.remove(0, strlen(MAGENTA_KEY)); // Remove the macro
+  if (new_string.startsWith(";")) {
+    if (new_string.startsWith(RED_KEY)) {
+      text_color = TFT_RED;
+      new_string.remove(0, strlen(RED_KEY)); // Remove the macro
+    } else if (new_string.startsWith(GREEN_KEY)) {
+      text_color = TFT_GREEN;
+      new_string.remove(0, strlen(GREEN_KEY)); // Remove the macro
+    } else if (new_string.startsWith(CYAN_KEY)) {
+      text_color = TFT_CYAN;
+      new_string.remove(0, strlen(CYAN_KEY)); // Remove the macro
+    } else if (new_string.startsWith(WHITE_KEY)) {
+      text_color = TFT_WHITE;
+      new_string.remove(0, strlen(WHITE_KEY)); // Remove the macro
+    } else if (new_string.startsWith(MAGENTA_KEY)) {
+      text_color = TFT_MAGENTA;
+      new_string.remove(0, strlen(MAGENTA_KEY)); // Remove the macro
+    }
   }
+
+  String spaces = String(' ', TFT_WIDTH / CHAR_WIDTH);
 
   // Set text color and print the string
   tft.setTextColor(text_color, background_color);
-  tft.print(new_string);
+  tft.print(new_string + spaces);
 }
 
 void Display::displayBuffer(bool do_clear)
 {
   if (this->display_buffer->size() > 0)
   {
-    int print_count = 1;
+    int print_count = 10;
     while ((display_buffer->size() > 0) && (print_count > 0))
     {
 
@@ -542,9 +544,9 @@ void Display::displayBuffer(bool do_clear)
         screen_buffer->add(display_buffer->shift());
 
         for (int i = 0; i < this->screen_buffer->size(); i++) {
-          tft.setCursor(xPos, (i * 12) + (SCREEN_HEIGHT / 6));
-          String spaces = String(' ', TFT_WIDTH / CHAR_WIDTH);
-          tft.print(spaces);
+          //tft.setCursor(xPos, (i * 12) + (SCREEN_HEIGHT / 6));
+          //String spaces = String(' ', TFT_WIDTH / CHAR_WIDTH);
+          //tft.print(spaces);
           tft.setCursor(xPos, (i * 12) + (SCREEN_HEIGHT / 6));
 
           this->processAndPrintString(tft, this->screen_buffer->get(i));

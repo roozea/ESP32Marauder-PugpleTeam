@@ -17,7 +17,6 @@ https://www.online-utility.org/image/convert/to/XBM
 #include <Wire.h>
 #include "esp_wifi.h"
 #include "esp_wifi_types.h"
-#include "esp_pm.h"
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -99,6 +98,50 @@ CommandLine cli_obj;
   MenuFunctions menu_function_obj;
 #endif
 
+// Auto-sleep variables
+unsigned long lastActivityTime = 0;
+const unsigned long SCREEN_TIMEOUT = 60000; // 60 segundos
+bool screenOn = true;
+
+// CPU frequency functions
+void setCpuFrequencyLow() {
+  setCpuFrequencyMhz(80);
+}
+
+void setCpuFrequencyHigh() {
+  setCpuFrequencyMhz(240);
+}
+
+// Screen sleep functions
+void screenSleep() {
+  #ifdef HAS_SCREEN
+    if (screenOn) {
+      Serial.println(">>> SCREEN SLEEP TRIGGERED <<<");
+      display_obj.tft.writecommand(0x10); // Sleep mode
+      digitalWrite(TFT_BL, LOW); // Apagar backlight
+      screenOn = false;
+      Serial.println("Screen: OFF");
+    }
+  #endif
+}
+
+void screenWake() {
+  #ifdef HAS_SCREEN
+    if (!screenOn) {
+      digitalWrite(TFT_BL, HIGH); // Encender backlight
+      display_obj.tft.writecommand(0x11); // Wake up
+      delay(5);
+      screenOn = true;
+    }
+    lastActivityTime = millis();
+  #endif
+}
+
+void resetActivityTimer() {
+  lastActivityTime = millis();
+  screenWake();
+}
+
 #if defined(HAS_SD) && !defined(HAS_C5_SD)
   SDInterface sd_obj;
 #endif
@@ -142,63 +185,11 @@ void backlightOff() {
     #ifdef MARAUDER_MINI
       digitalWrite(TFT_BL, HIGH);
     #endif
-
+  
     #ifndef MARAUDER_MINI
       digitalWrite(TFT_BL, LOW);
     #endif
   #endif
-}
-
-// === AUTO-SLEEP VARIABLES (60s timeout) ===
-#ifdef HAS_SCREEN
-  unsigned long lastActivityTime = 0;
-  const unsigned long SCREEN_TIMEOUT = 60000; // 60 segundos en milisegundos
-  bool screenOn = true;
-#endif
-
-// === AUTO-SLEEP FUNCTIONS ===
-#ifdef HAS_SCREEN
-void screenSleep() {
-  if (screenOn) {
-    #ifdef MARAUDER_MINI
-      digitalWrite(TFT_BL, HIGH); // MINI: HIGH = off
-    #else
-      digitalWrite(TFT_BL, LOW);  // V6_1 y otros: LOW = off
-    #endif
-    screenOn = false;
-    Serial.println("Screen: Auto-sleep (60s timeout)");
-  }
-}
-
-void screenWake() {
-  if (!screenOn) {
-    #ifdef MARAUDER_MINI
-      digitalWrite(TFT_BL, LOW);  // MINI: LOW = on
-    #else
-      digitalWrite(TFT_BL, HIGH); // V6_1 y otros: HIGH = on
-    #endif
-    screenOn = true;
-    Serial.println("Screen: Wake up");
-  }
-  lastActivityTime = millis(); // Reset timer
-}
-
-void resetActivityTimer() {
-  lastActivityTime = millis();
-}
-#endif
-
-// CPU frequency management for battery optimization
-void setCpuFrequencyLow() {
-  // 80MHz for menu navigation - saves ~40% battery
-  setCpuFrequencyMhz(80);
-  Serial.println("CPU: 80MHz (low power mode)");
-}
-
-void setCpuFrequencyHigh() {
-  // 240MHz for scanning/attacks - maximum performance
-  setCpuFrequencyMhz(240);
-  Serial.println("CPU: 240MHz (high performance mode)");
 }
 
 #ifdef HAS_C5_SD
@@ -208,6 +199,10 @@ void setCpuFrequencyHigh() {
 
 void setup()
 {
+  // Iniciar CPU a 80MHz para ahorro de energía
+  setCpuFrequencyLow();
+  lastActivityTime = millis();
+
   #ifndef HAS_DUAL_BAND
     esp_spiram_init();
   #endif
@@ -276,47 +271,41 @@ void setup()
 
   #ifdef HAS_SCREEN
     #ifndef MARAUDER_CARDPUTER
-      // Dibujar pug hacker 64x64 centrado arriba (solo líneas, fondo transparente)
+      // Logo Pug Hacker centrado (64x64)
       int pug_x = (TFT_WIDTH - PUG_HACKER_WIDTH) / 2;
-      int pug_y = 5;
+      int pug_y = (TFT_HEIGHT - PUG_HACKER_HEIGHT) / 2 - 35;
       display_obj.tft.drawXBitmap(pug_x, pug_y, pug_hacker_bits,
-                                  PUG_HACKER_WIDTH, PUG_HACKER_HEIGHT,
-                                  TFT_MAGENTA);
-
-      // Texto debajo del pug (ajustado para logo 64x64)
-      display_obj.tft.setTextColor(TFT_MAGENTA, TFT_BLACK);
-      display_obj.tft.drawCentreString("Pugple Team", TFT_WIDTH/2, 75, 1);
+                                  PUG_HACKER_WIDTH, PUG_HACKER_HEIGHT, TFT_MAGENTA);
 
       display_obj.tft.setTextColor(TFT_WHITE, TFT_BLACK);
-      display_obj.tft.drawCentreString("ESP32 Marauder", TFT_WIDTH/2, 95, 1);
+      display_obj.tft.drawCentreString("ESP32 Marauder", TFT_WIDTH/2, 20, 2);
 
       display_obj.tft.setTextColor(TFT_DARKGREY, TFT_BLACK);
-      display_obj.tft.drawCentreString("inspired by", TFT_WIDTH/2, 115, 1);
-      display_obj.tft.drawCentreString("JustCallMeKoko", TFT_WIDTH/2, 130, 1);
+      display_obj.tft.drawCentreString("inspired by JustCallMeKoko", TFT_WIDTH/2, 35, 1);
+
+      display_obj.tft.setTextColor(TFT_MAGENTA, TFT_BLACK);
+      display_obj.tft.drawCentreString("Pugple Team", TFT_WIDTH/2, TFT_HEIGHT - 30, 2);
 
       display_obj.tft.setTextColor(TFT_GREEN, TFT_BLACK);
-      display_obj.tft.drawCentreString(display_obj.version_number, TFT_WIDTH/2, 150, 1);
+      display_obj.tft.drawCentreString(display_obj.version_number, TFT_WIDTH/2, TFT_HEIGHT - 12, 1);
     #else
-      // Cardputer version (rotado) - logo 64x64 (solo líneas, fondo transparente)
-      int pug_x = (TFT_HEIGHT - PUG_HACKER_WIDTH) / 2;
-      int pug_y = 5;
+      // Logo Pug Hacker centrado (64x64) - CARDPUTER rotated
+      int pug_x = (TFT_HEIGHT - PUG_HACKER_HEIGHT) / 2;
+      int pug_y = (TFT_WIDTH - PUG_HACKER_WIDTH) / 2 - 35;
       display_obj.tft.drawXBitmap(pug_x, pug_y, pug_hacker_bits,
-                                  PUG_HACKER_WIDTH, PUG_HACKER_HEIGHT,
-                                  TFT_MAGENTA);
-
-      // Texto debajo del pug (coordenadas rotadas, ajustado para logo 64x64)
-      display_obj.tft.setTextColor(TFT_MAGENTA, TFT_BLACK);
-      display_obj.tft.drawCentreString("Pugple Team", TFT_HEIGHT/2, 75, 1);
+                                  PUG_HACKER_WIDTH, PUG_HACKER_HEIGHT, TFT_MAGENTA);
 
       display_obj.tft.setTextColor(TFT_WHITE, TFT_BLACK);
-      display_obj.tft.drawCentreString("ESP32 Marauder", TFT_HEIGHT/2, 95, 1);
+      display_obj.tft.drawCentreString("ESP32 Marauder", TFT_HEIGHT/2, 20, 2);
 
       display_obj.tft.setTextColor(TFT_DARKGREY, TFT_BLACK);
-      display_obj.tft.drawCentreString("inspired by", TFT_HEIGHT/2, 115, 1);
-      display_obj.tft.drawCentreString("JustCallMeKoko", TFT_HEIGHT/2, 130, 1);
+      display_obj.tft.drawCentreString("inspired by JustCallMeKoko", TFT_HEIGHT/2, 35, 1);
+
+      display_obj.tft.setTextColor(TFT_MAGENTA, TFT_BLACK);
+      display_obj.tft.drawCentreString("Pugple Team", TFT_HEIGHT/2, TFT_WIDTH - 30, 2);
 
       display_obj.tft.setTextColor(TFT_GREEN, TFT_BLACK);
-      display_obj.tft.drawCentreString(display_obj.version_number, TFT_HEIGHT/2, 150, 1);
+      display_obj.tft.drawCentreString(display_obj.version_number, TFT_HEIGHT/2, TFT_WIDTH - 12, 1);
     #endif
   #endif
 
@@ -397,17 +386,7 @@ void setup()
   menu_function_obj.changeMenu(menu_function_obj.current_menu);*/
 
   wifi_scan_obj.StartScan(WIFI_SCAN_OFF);
-
-  // Start in low power mode (80MHz) for menu navigation
-  setCpuFrequencyLow();
-
-  // Initialize auto-sleep timer
-  #ifdef HAS_SCREEN
-    lastActivityTime = millis();
-    screenOn = true;
-    Serial.println("Auto-sleep: Initialized (60s timeout)");
-  #endif
-
+  
   Serial.println(F("CLI Ready"));
   cli_obj.RunSetup();
 }
@@ -418,6 +397,20 @@ void loop()
   currentTime = millis();
   bool mini = false;
 
+  // Auto-sleep check
+  #ifdef HAS_SCREEN
+    static unsigned long lastDebugPrint = 0;
+    if (currentTime - lastDebugPrint > 10000) {
+      Serial.printf("Auto-sleep: screenOn=%d, elapsed=%lu ms, timeout=%lu ms\n",
+                    screenOn, currentTime - lastActivityTime, SCREEN_TIMEOUT);
+      lastDebugPrint = currentTime;
+    }
+
+    if (screenOn && (currentTime - lastActivityTime > SCREEN_TIMEOUT)) {
+      screenSleep();
+    }
+  #endif
+
   #ifdef SCREEN_BUFFER
     #ifndef HAS_ILI9341
       mini = true;
@@ -427,8 +420,6 @@ void loop()
   #if (defined(HAS_ILI9341) && !defined(MARAUDER_CYD_2USB))
     #ifdef HAS_BUTTONS
       if (c_btn.isHeld()) {
-        screenWake(); // Auto-sleep: wake on button press
-
         if (menu_function_obj.disable_touch)
           menu_function_obj.disable_touch = false;
         else
@@ -440,13 +431,6 @@ void loop()
           delay(1);
       }
     #endif
-  #endif
-
-  // === AUTO-SLEEP: Check timeout ===
-  #ifdef HAS_SCREEN
-    if (screenOn && (millis() - lastActivityTime > SCREEN_TIMEOUT)) {
-      screenSleep();
-    }
   #endif
 
   // Update all of our objects
